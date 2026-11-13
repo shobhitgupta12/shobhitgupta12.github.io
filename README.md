@@ -2,7 +2,7 @@
 
 The personal portfolio website of **Shobhit Gupta**, undergraduate student at Punjab Engineering College (PEC), Chandigarh, focusing on Full-Stack Web Development, Data Science, AI, and Quantitative Finance.
 
-Live Website: [https://shobhitgupta-portfolio.vercel.app/](https://shobhitgupta-portfolio.vercel.app/)
+Live Website: [https://shobhitt.me/](https://shobhitt.me/)
 
 ---
 
