@@ -53,7 +53,7 @@ const Navigation = () => {
           sm:gap-6 sm:text-tiny
           md:absolute md:top-1/2 md:-translate-y-1/2 md:z-auto
           md:gap-6 lg:gap-8 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:border-0 md:rounded-none md:shadow-none md:max-w-none
-          ${scrolled ? 'md:scale-90 md:left-[85%]' : 'md:left-[53%] md:-translate-x-1/2'}
+          ${scrolled ? 'md:scale-90 md:right-[12rem]' : 'md:left-[53%] md:-translate-x-1/2'}
         `}
       >
         {NAV_LINKS.map(item => (
