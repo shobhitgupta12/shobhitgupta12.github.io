@@ -47,13 +47,14 @@ const Navigation = () => {
 
       {/* Nav links — floating pill on mobile, centred inline links on desktop */}
       <div
-        className="
+        className={`
           flex flex-nowrap items-center whitespace-nowrap transition-all duration-500 pointer-events-auto
           fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 gap-4 text-[10px] px-5 py-3 bg-[#0a0a0a]/90 backdrop-blur-md rounded-full border border-[#27272a] z-[100] text-white shadow-2xl max-w-[calc(100vw-1.5rem)]
           sm:gap-6 sm:text-tiny
-          md:absolute md:top-1/2 md:left-[53%] md:-translate-x-1/2 md:-translate-y-1/2 md:z-auto
+          md:absolute md:top-1/2 md:-translate-y-1/2 md:z-auto
           md:gap-6 lg:gap-8 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:border-0 md:rounded-none md:shadow-none md:max-w-none
-        "
+          ${scrolled ? 'md:scale-90 md:left-[85%]' : 'md:left-[53%] md:-translate-x-1/2'}
+        `}
       >
         {NAV_LINKS.map(item => (
           <a
