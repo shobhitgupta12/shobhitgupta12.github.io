@@ -57,6 +57,9 @@ const Contact = () => {
           <a href={profile.tuf} target="_blank" rel="noopener noreferrer" aria-label="TakeUForward — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-5 md:px-6 py-3 hover:border-accent hover:text-white transition-colors">
             [TUF PROFILE]
           </a>
+          <a href={profile.resume} target="_blank" rel="noopener noreferrer" aria-label="Resume — Shobhit Gupta (Google Docs)" className="border border-[#27272a] bg-[#0c0c0c] px-5 md:px-6 py-3 hover:border-accent hover:text-white transition-colors">
+            [RESUME ↗]
+          </a>
         </div>
 
         {/* Resume Gate */}
@@ -96,9 +99,10 @@ const Contact = () => {
               </div>
               {resumeError && (
                 <p className="font-mono text-[10px] text-yellow-500 max-w-xs leading-relaxed">
-                  The resume file isn't available right now. Please reach out on{' '}
-                  <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">LinkedIn</a>{' '}
-                  and I'll share it directly.
+                  The PDF isn't available right now. You can still open the{' '}
+                  <a href={profile.resume} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">resume on Google Docs</a>{' '}
+                  or reach out on{' '}
+                  <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">LinkedIn</a>.
                 </p>
               )}
               <button type="button" onClick={() => { setShowForm(false); setResumeError(false); }} className="font-mono text-[10px] text-muted hover:text-white mt-2">

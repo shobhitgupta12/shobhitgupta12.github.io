@@ -6,6 +6,7 @@ export const profile = {
   location: "Chandigarh / India",
   university: "Punjab Engineering College",
   email: "shobhitplac@gmail.com",
+  resume: "https://docs.google.com/document/d/1QNN4j2pb21Be86ytJC00z4dqg3QvzSHAqatdwt4OTn8/edit",
   github: "https://github.com/shobhitgupta12",
   linkedin: "https://www.linkedin.com/in/shobhit-gupta-38a77b331/",
   leetcode: "",

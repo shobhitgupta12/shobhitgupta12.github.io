@@ -1,54 +1,88 @@
 import { useState, useEffect } from 'react';
+import { profile } from '../data/profile';
+
+const NAV_LINKS = ['WORK', 'ABOUT', 'EXPLORE', 'LAB'];
 
 const Navigation = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    let frame = 0;
+
     const handleScroll = () => {
-      setScrolled(window.scrollY > 100);
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setScrolled(window.scrollY > 24);
+      });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-50 flex items-center justify-between font-mono text-tiny transition-all duration-700 ease-in-out pointer-events-none
-      ${scrolled ? 'py-4 px-5 sm:px-8 md:px-16 lg:px-24' : 'py-6 px-5 sm:px-8 md:py-8 md:px-16 lg:px-24'}
-    `}>
+    <nav
+      aria-label="Primary"
+      className={`fixed top-0 left-0 w-full z-50 flex items-center justify-between font-mono text-tiny pointer-events-none px-5 sm:px-8 md:px-16 lg:px-24 transition-all duration-500 ease-in-out
+        ${scrolled ? 'py-3' : 'py-5 md:py-6'}
+        md:bg-[#070707]/85 md:backdrop-blur-xl md:border-b md:border-[#27272a]
+        ${scrolled ? 'md:shadow-[0_12px_32px_rgba(0,0,0,0.45)]' : ''}
+      `}
+    >
       {/* Left: Branding */}
-      <div className={`tracking-widest z-10 transition-all duration-700 pointer-events-auto mix-blend-difference text-[11px] sm:text-tiny ${scrolled ? 'opacity-80 scale-90 origin-left' : 'opacity-100 scale-100'}`}>
-        SHOBHIT_GUPTA
-      </div>
-
-      {/* Middle/Right: Nav Links (Animates on scroll) */}
-      <div 
-        className="
-          flex flex-nowrap whitespace-nowrap transition-all duration-700 ease-in-out pointer-events-auto
-          fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 gap-4 text-[10px] px-5 py-3 bg-[#0a0a0a]/90 backdrop-blur-md rounded-full border border-[#27272a] z-[100] text-white shadow-2xl max-w-[calc(100vw-1.5rem)]
-          sm:gap-6 sm:text-tiny md:bg-transparent md:backdrop-blur-none md:border-none md:px-0 md:py-0 md:shadow-none md:text-inherit md:bottom-auto md:max-w-none
-          md:absolute md:top-1/2 md:gap-5 lg:gap-8 md:origin-right md:mix-blend-difference md:[left:var(--desktop-left)] md:[transform:var(--desktop-transform)]
-        "
-        style={{
-          '--desktop-left': scrolled ? '100%' : '50%',
-          '--desktop-transform': scrolled 
-            ? 'translate(calc(-100% - max(8rem, 15vw)), -50%) scale(0.85)' 
-            : 'translate(-50%, -50%) scale(1)'
-        } as React.CSSProperties}
+      <a
+        href="#hero"
+        className={`relative z-10 tracking-widest text-white text-[11px] sm:text-tiny pointer-events-auto transition-opacity duration-500 hover:text-accent ${
+          scrolled ? 'opacity-80' : 'opacity-100'
+        }`}
       >
-        {['WORK', 'ABOUT', 'EXPLORE', 'LAB'].map(item => (
-          <a 
-            key={item} 
-            href={`#${item.toLowerCase()}`} 
-            className="hover:text-accent transition-colors py-1"
+        SHOBHIT_GUPTA
+      </a>
+
+      {/* Nav links — floating pill on mobile, centred inline links on desktop */}
+      <div
+        className="
+          flex flex-nowrap items-center whitespace-nowrap transition-all duration-500 pointer-events-auto
+          fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 gap-4 text-[10px] px-5 py-3 bg-[#0a0a0a]/90 backdrop-blur-md rounded-full border border-[#27272a] z-[100] text-white shadow-2xl max-w-[calc(100vw-1.5rem)]
+          sm:gap-6 sm:text-tiny
+          md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:z-auto
+          md:gap-6 lg:gap-8 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:border-0 md:rounded-none md:shadow-none md:max-w-none
+        "
+      >
+        {NAV_LINKS.map(item => (
+          <a
+            key={item}
+            href={`#${item.toLowerCase()}`}
+            className="py-1 text-white/80 hover:text-accent transition-colors"
           >
             [{item}]
           </a>
         ))}
+        <a
+          href={profile.resume}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open resume (Google Docs)"
+          className="hidden lg:inline py-1 text-white/80 hover:text-accent transition-colors"
+        >
+          [RESUME ↗]
+        </a>
       </div>
 
       {/* Right: Status */}
-      <div className={`flex items-center gap-2 z-10 transition-all duration-700 pointer-events-auto mix-blend-difference text-[11px] sm:text-tiny ${scrolled ? 'scale-90 origin-right' : 'scale-100'}`} style={{ color: 'var(--online-color)' }}>
-        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--online-color)' }}></div>
+      <div
+        className={`relative z-10 flex items-center gap-2 text-[11px] sm:text-tiny pointer-events-auto transition-opacity duration-500 ${
+          scrolled ? 'opacity-90' : 'opacity-100'
+        }`}
+        style={{ color: 'var(--online-color)' }}
+      >
+        <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--online-color)' }} />
         [ONLINE]
       </div>
     </nav>
