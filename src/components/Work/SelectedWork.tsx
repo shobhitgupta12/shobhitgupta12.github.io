@@ -10,6 +10,7 @@ const WorkRow = ({ project, idx }: { project: (typeof projects)[0]; idx: number 
     const row = rowRef.current;
     const glow = glowRef.current;
     if (!row || !glow) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = row.getBoundingClientRect();
@@ -31,7 +32,7 @@ const WorkRow = ({ project, idx }: { project: (typeof projects)[0]; idx: number 
   return (
     <div
       ref={rowRef}
-      className="grid grid-cols-1 md:grid-cols-12 gap-8 border-b border-[#27272a] pb-12 last:border-0 group relative"
+      className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 border-b border-[#27272a] pb-10 md:pb-12 last:border-0 group relative"
       style={{ transition: 'border-color 0.3s' }}
     >
       {/* Proximity glow */}
@@ -113,7 +114,7 @@ const SelectedWork = () => {
 
   return (
     <section id="work" className="section container border-t">
-      <div className="flex justify-between items-end mb-16">
+      <div className="flex flex-wrap gap-4 justify-between items-end mb-12 md:mb-16">
         <h2 className="font-code text-tiny" style={{ color: 'var(--text-muted)' }}>SELECTED WORK</h2>
         <a href="https://github.com/shobhitgupta12" target="_blank" rel="noopener noreferrer" aria-label="GitHub Profile — Shobhit Gupta"
            className="font-code text-tiny hover:text-white transition-colors"

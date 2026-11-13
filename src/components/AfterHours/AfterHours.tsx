@@ -12,26 +12,32 @@ const ItemOverlay = ({ item, category, onClose }: { item: InterestItem; category
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleEsc);
+    };
   }, [onClose]);
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer p-4"
       onClick={onClose}
     >
       <div 
-        className="max-w-lg w-full mx-4 border bg-[#0a0a0a] p-8 md:p-12 relative cursor-default"
+        className="max-w-lg w-full max-h-[85svh] overflow-y-auto overscroll-contain border bg-[#0a0a0a] p-6 md:p-12 relative cursor-default"
         style={{ borderColor: category.color }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 font-mono text-tiny text-dim hover:text-white transition-colors"
+          className="sticky top-0 float-right -mt-2 -mr-2 mb-2 ml-4 px-2 py-2 font-mono text-tiny text-dim hover:text-white transition-colors"
+          aria-label="Close"
         >
-          [ESC]
+          [CLOSE]
         </button>
 
         {/* Category label */}
@@ -151,7 +157,7 @@ const AfterHours = () => {
     <section ref={containerRef} id="afterhours" className="section container border-t">
       
       {/* Header */}
-      <div className="afterhours-title mb-16">
+      <div className="afterhours-title mb-10 md:mb-16">
         <h2 className="font-mono text-tiny text-muted mb-4">AFTER HOURS</h2>
         <p className="font-serif text-body text-dim italic max-w-xl">
           Things I disappear into when I'm not building.
@@ -159,12 +165,13 @@ const AfterHours = () => {
       </div>
 
       {/* Category Selection — floating interactive objects */}
-      <div className="flex flex-wrap gap-3 mb-12">
+      <div className="flex flex-wrap gap-2 md:gap-3 mb-8 md:mb-12">
         {afterHoursData.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
-            className={`font-mono text-tiny px-5 py-3 border transition-all duration-300 relative overflow-hidden group ${
+            aria-pressed={activeCategory === cat.id}
+            className={`font-mono text-tiny px-3.5 py-2.5 md:px-5 md:py-3 border transition-all duration-300 relative overflow-hidden group ${
               activeCategory === cat.id 
                 ? 'text-white bg-[#111]'
                 : 'text-muted hover:text-white'
@@ -184,7 +191,7 @@ const AfterHours = () => {
         
         {/* Left: Archive Items */}
         <div className="lg:col-span-7">
-          <div className="bg-[#0c0c0c] border border-[#27272a] min-h-[500px] relative overflow-hidden">
+          <div className="bg-[#0c0c0c] border border-[#27272a] min-h-[360px] md:min-h-[500px] relative overflow-hidden">
             
             {/* Ambient glow */}
             <div 
@@ -209,25 +216,25 @@ const AfterHours = () => {
               {activeCat?.items.map((item, idx) => (
                 <div 
                   key={idx} 
-                  className="group cursor-pointer border-b border-[#27272a] last:border-0 py-6 first:pt-0 hover:bg-[#111] transition-colors -mx-8 px-8"
+                  className="group cursor-pointer border-b border-[#27272a] last:border-0 py-5 md:py-6 first:pt-0 hover:bg-[#111] transition-colors -mx-6 px-6 md:-mx-8 md:px-8"
                   onClick={() => setSelectedItem({ item, category: activeCat })}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-baseline gap-3">
+                  <div className="flex justify-between items-start gap-3 mb-2">
+                    <div className="flex items-baseline gap-3 min-w-0">
                       <span className="font-mono text-[10px] text-dim">0{idx + 1}</span>
-                      <h3 className="font-sans text-body font-bold text-white group-hover:text-accent transition-colors">
+                      <h3 className="font-sans text-small md:text-body font-bold text-white group-hover:text-accent transition-colors">
                         {item.title}
                       </h3>
                     </div>
-                    <span className="font-mono text-[10px] text-dim opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="hidden sm:inline font-mono text-[10px] text-dim opacity-0 group-hover:opacity-100 transition-opacity">
                       [VIEW]
                     </span>
                   </div>
-                  <p className="font-serif text-small text-dim italic ml-8">
+                  <p className="font-serif text-small text-dim italic ml-7 md:ml-8">
                     "{item.desc}"
                   </p>
                   {item.theme && (
-                    <div className="font-mono text-[10px] text-muted mt-2 ml-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="font-mono text-[10px] text-muted mt-2 ml-7 md:ml-8 opacity-0 group-hover:opacity-100 transition-opacity">
                       {item.theme}
                     </div>
                   )}
@@ -254,14 +261,14 @@ const AfterHours = () => {
           {activeCategory === 'games' && (
             <div className="border border-[#27272a] bg-[#0a0a0a] p-6">
               <div className="font-mono text-[10px] text-muted mb-4">GAME SHELF</div>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {activeCat?.items.map((game, idx) => (
                   <div 
                     key={idx}
                     className="aspect-[3/4] bg-[#111] border border-[#27272a] flex items-end p-1 cursor-pointer hover:border-green-400 hover:-translate-y-1 transition-all duration-300 group"
                     onClick={() => setSelectedItem({ item: game, category: activeCat })}
                   >
-                    <span className="font-mono text-[6px] md:text-[8px] text-dim group-hover:text-white transition-colors leading-tight">
+                    <span className="font-mono text-[7px] sm:text-[8px] text-dim group-hover:text-white transition-colors leading-tight">
                       {game.title}
                     </span>
                   </div>

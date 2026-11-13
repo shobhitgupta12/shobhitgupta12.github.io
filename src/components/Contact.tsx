@@ -5,52 +5,62 @@ const Contact = () => {
   const [showForm, setShowForm] = useState(false);
   const [email, setEmail] = useState('');
   const [unlocked, setUnlocked] = useState(false);
+  const [resumeError, setResumeError] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && email.includes('@')) {
-      // In a real implementation, you would send this to your backend
+    if (!email.trim() || !email.includes('@')) return;
+
+    setResumeError(false);
+    try {
+      // Make sure the PDF is actually available before opening a broken tab.
+      const res = await fetch('/resume.pdf', { method: 'HEAD', cache: 'no-store' });
+      if (!res.ok) throw new Error('Resume unavailable');
       console.log('Resume access granted for:', email);
       setUnlocked(true);
-      window.open('/resume.pdf', '_blank');
+      window.open('/resume.pdf', '_blank', 'noopener,noreferrer');
+    } catch {
+      setResumeError(true);
     }
   };
 
   return (
-    <section id="contact" className="section container border-t mb-32">
+    <section id="contact" className="section container border-t mb-20 md:mb-32">
       <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
         <h2 className="font-code text-tiny mb-6" style={{ color: 'var(--text-muted)' }}>LET'S BUILD SOMETHING</h2>
-        <p className="font-serif text-body italic mb-12" style={{ color: 'var(--text-muted)' }}>
+        <p className="font-serif text-body italic mb-10 md:mb-12" style={{ color: 'var(--text-muted)' }}>
           For research, ML, backend, creative coding, or interesting systems.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-4 font-mono text-tiny mb-8">
-          <a 
-            href={`mailto:${profile.email}`} 
-            className="border border-[#27272a] bg-[#0c0c0c] px-6 py-3 hover:border-accent hover:text-white transition-colors" 
-            title="I don't bite. Unless it's a segmentation fault."
-            onMouseEnter={() => {
-              if (!window.sessionStorage.getItem('egg_contact')) {
-                window.dispatchEvent(new CustomEvent('easter-egg-found', { detail: { name: "Segmentation Fault Egg" } }));
-                window.sessionStorage.setItem('egg_contact', 'true');
-              }
-            }}
-          >
-            [EMAIL]
-          </a>
-          <a href={profile.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-6 py-3 hover:border-accent hover:text-white transition-colors">
+        <div className="flex flex-wrap justify-center gap-3 md:gap-4 font-mono text-tiny mb-8">
+          {profile.email && (
+            <a 
+              href={`mailto:${profile.email}`} 
+              className="border border-[#27272a] bg-[#0c0c0c] px-5 md:px-6 py-3 hover:border-accent hover:text-white transition-colors" 
+              title="I don't bite. Unless it's a segmentation fault."
+              onMouseEnter={() => {
+                if (!window.sessionStorage.getItem('egg_contact')) {
+                  window.dispatchEvent(new CustomEvent('easter-egg-found', { detail: { name: "Segmentation Fault Egg" } }));
+                  window.sessionStorage.setItem('egg_contact', 'true');
+                }
+              }}
+            >
+              [EMAIL]
+            </a>
+          )}
+          <a href={profile.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-5 md:px-6 py-3 hover:border-accent hover:text-white transition-colors">
             [GITHUB]
           </a>
-          <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-6 py-3 hover:border-accent hover:text-white transition-colors">
+          <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-5 md:px-6 py-3 hover:border-accent hover:text-white transition-colors">
             [LINKEDIN]
           </a>
-          <a href={profile.tuf} target="_blank" rel="noopener noreferrer" aria-label="TakeUForward — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-6 py-3 hover:border-accent hover:text-white transition-colors">
+          <a href={profile.tuf} target="_blank" rel="noopener noreferrer" aria-label="TakeUForward — Shobhit Gupta" className="border border-[#27272a] bg-[#0c0c0c] px-5 md:px-6 py-3 hover:border-accent hover:text-white transition-colors">
             [TUF PROFILE]
           </a>
         </div>
 
         {/* Resume Gate */}
-        <div className="mt-4">
+        <div className="mt-4 w-full max-w-md">
           {!showForm && !unlocked ? (
             <button 
               onClick={() => setShowForm(true)}
@@ -70,20 +80,28 @@ const Contact = () => {
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
               <div className="font-mono text-[10px] text-dim">Please provide your email to access the resume:</div>
-              <div className="flex border border-accent bg-[#0c0c0c]">
+              <div className="flex flex-col sm:flex-row w-full sm:w-auto border border-accent bg-[#0c0c0c]">
                 <input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@company.com" 
                   required
-                  className="bg-transparent border-none outline-none text-white font-mono text-tiny px-4 py-3 w-64 placeholder:text-[#3f3f46]"
+                  autoComplete="email"
+                  className="bg-transparent border-none outline-none text-white font-mono text-tiny px-4 py-3 w-full sm:w-64 min-w-0 placeholder:text-[#3f3f46]"
                 />
-                <button type="submit" className="bg-accent text-white font-mono text-tiny px-6 hover:bg-blue-600 transition-colors">
+                <button type="submit" className="bg-accent text-white font-mono text-tiny px-6 py-3 hover:bg-blue-600 transition-colors">
                   OPEN
                 </button>
               </div>
-              <button type="button" onClick={() => setShowForm(false)} className="font-mono text-[10px] text-muted hover:text-white mt-2">
+              {resumeError && (
+                <p className="font-mono text-[10px] text-yellow-500 max-w-xs leading-relaxed">
+                  The resume file isn't available right now. Please reach out on{' '}
+                  <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">LinkedIn</a>{' '}
+                  and I'll share it directly.
+                </p>
+              )}
+              <button type="button" onClick={() => { setShowForm(false); setResumeError(false); }} className="font-mono text-[10px] text-muted hover:text-white mt-2">
                 [CANCEL]
               </button>
             </form>

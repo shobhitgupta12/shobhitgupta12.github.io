@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { gsap } from 'gsap';
 
@@ -44,28 +44,37 @@ const HOUSES = [
 export const SortingHat = () => {
   const [sortState, setSortState] = useState<'idle' | 'thinking' | 'sorted'>('idle');
   const [house, setHouse] = useState<typeof HOUSES[0] | null>(null);
+  const sortTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (sortTimer.current) window.clearTimeout(sortTimer.current);
+    };
+  }, []);
 
   const handleSort = () => {
     if (sortState !== 'idle') return;
     setSortState('thinking');
     
-    setTimeout(() => {
+    sortTimer.current = window.setTimeout(() => {
       // Randomly select a house
       const selected = HOUSES[Math.floor(Math.random() * HOUSES.length)];
       setHouse(selected);
       setSortState('sorted');
       
       const elementsToDust = document.querySelectorAll('main > div:not(:last-child), main > section#hero, nav, footer, .grid-overlay');
+
+      // Blurring every section is expensive on phones — keep the effect light there.
+      const isSmallScreen = window.matchMedia('(max-width: 767px)').matches;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       
       const tl = gsap.timeline();
       
       tl.to(elementsToDust, {
         opacity: 0,
-        filter: 'blur(10px) brightness(200%)',
-        y: -30,
-        scale: 0.98,
-        stagger: 0.05,
-        duration: 0.8,
+        ...(reduceMotion ? {} : { filter: 'blur(10px) brightness(200%)', y: -30, scale: 0.98 }),
+        stagger: isSmallScreen ? 0 : 0.05,
+        duration: isSmallScreen ? 0.35 : 0.8,
         ease: 'power2.inOut',
         onComplete: () => {
           // Magically update the site's CSS variables to match the house!
@@ -84,11 +93,9 @@ export const SortingHat = () => {
       })
       .to(elementsToDust, {
         opacity: 1,
-        filter: 'blur(0px) brightness(100%)',
-        y: 0,
-        scale: 1,
-        stagger: 0.05,
-        duration: 1.2,
+        ...(reduceMotion ? {} : { filter: 'blur(0px) brightness(100%)', y: 0, scale: 1 }),
+        stagger: isSmallScreen ? 0 : 0.05,
+        duration: isSmallScreen ? 0.45 : 1.2,
         ease: 'power2.out',
         clearProps: 'all'
       });
@@ -97,12 +104,12 @@ export const SortingHat = () => {
   };
 
   return (
-    <section className="py-24 border-t border-[#27272a] bg-[#050505] relative overflow-hidden flex flex-col items-center justify-center text-center px-4">
+    <section className="py-20 md:py-24 border-t border-[#27272a] bg-[#050505] relative overflow-hidden flex flex-col items-center justify-center text-center px-4">
       {/* Magical background elements */}
       <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, #d4af37 0%, transparent 60%)' }}></div>
       
       <div className="relative z-10 max-w-2xl mx-auto">
-        <h2 className="font-serif text-2xl md:text-4xl text-[#d4af37] mb-6 flex items-center justify-center gap-3">
+        <h2 className="font-serif text-xl sm:text-2xl md:text-4xl text-[#d4af37] mb-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
           <Sparkles className="animate-pulse" /> The Sorting Ceremony <Sparkles className="animate-pulse" />
         </h2>
         
@@ -132,7 +139,7 @@ export const SortingHat = () => {
         {sortState === 'sorted' && house && (
           <div className="animate-fade-in-up">
             <p className="font-serif text-xl md:text-2xl italic text-dim mb-6 px-4">"{house.quote}"</p>
-            <h3 className="font-sans text-5xl md:text-7xl font-bold uppercase tracking-tighter" style={{ color: house.color, textShadow: `0 0 40px ${house.color}` }}>
+            <h3 className="font-sans text-4xl sm:text-5xl md:text-7xl font-bold uppercase tracking-tighter break-words" style={{ color: house.color, textShadow: `0 0 40px ${house.color}` }}>
               {house.name}!
             </h3>
             <p className="mt-8 font-code text-[10px] text-muted">

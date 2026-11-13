@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Eraser, Trash2, Undo, Redo, Sparkles } from 'lucide-react';
 
 type Point = { x: number; y: number };
@@ -21,105 +21,177 @@ type AnalysisResult = {
 
 const ScribbleBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const dprRef = useRef(1);
+  const isDrawingRef = useRef(false);
+  const pointsRef = useRef<Point[]>([]);
+  const colorRef = useRef('#e4e4e7');
+  const sizeRef = useRef(2);
+
   const [lines, setLines] = useState<Line[]>([]);
   const [redoStack, setRedoStack] = useState<Line[]>([]);
-  const [currentLine, setCurrentLine] = useState<Line | null>(null);
   const [color, setColor] = useState('#e4e4e7');
-  const [size] = useState(2);
   const [aiResponse, setAiResponse] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [promptStr, setPromptStr] = useState(PROMPTS[0]);
+  const [promptStr] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
+  const linesRef = useRef<Line[]>([]);
 
   const colors = ['#e4e4e7', '#f87171', '#3b82f6', '#fbbf24', '#0c0c0c']; // Paper/notebook colors + eraser
 
   useEffect(() => {
-    setPromptStr(PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
-  }, []);
+    colorRef.current = color;
+  }, [color]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Notebook grid background
+  const drawGrid = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.clearRect(0, 0, width, height);
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
-    for(let i = 0; i < canvas.width; i+=20) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    for (let i = 0; i < width; i += 20) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
     }
-    for(let i = 0; i < canvas.height; i+=20) {
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    for (let i = 0; i < height; i += 20) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
     }
+  }, []);
 
+  const drawLine = useCallback((ctx: CanvasRenderingContext2D, line: Line) => {
+    if (line.points.length === 0) return;
+    if (line.points.length === 1) {
+      ctx.beginPath();
+      ctx.fillStyle = line.color;
+      ctx.arc(line.points[0].x, line.points[0].y, line.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(line.points[0].x, line.points[0].y);
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = line.size;
+    for (let i = 1; i < line.points.length; i++) {
+      ctx.lineTo(line.points[i].x, line.points[i].y);
+    }
+    ctx.stroke();
+  }, []);
+
+  const redraw = useCallback((allLines: Line[]) => {
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    if (!canvas || !ctx) return;
+
+    const width = canvas.width / dprRef.current;
+    const height = canvas.height / dprRef.current;
+
+    ctx.setTransform(dprRef.current, 0, 0, dprRef.current, 0, 0);
+    drawGrid(ctx, width, height);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    allLines.forEach(line => drawLine(ctx, line));
+  }, [drawGrid, drawLine]);
 
-    const drawLine = (line: Line) => {
-      if (line.points.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(line.points[0].x, line.points[0].y);
-      ctx.strokeStyle = line.color;
-      ctx.lineWidth = line.size;
-      for (let i = 1; i < line.points.length; i++) {
-        ctx.lineTo(line.points[i].x, line.points[i].y);
-      }
-      ctx.stroke();
+  // Size the backing store to the rendered size (crisp on retina, no distortion).
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+
+      dprRef.current = dpr;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+
+      ctxRef.current = canvas.getContext('2d');
+      redraw(linesRef.current);
     };
 
-    lines.forEach(drawLine);
-    if (currentLine) drawLine(currentLine);
+    resize();
 
-  }, [lines, currentLine]);
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [redraw]);
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+  // Repaint committed strokes whenever the drawing changes.
+  useEffect(() => {
+    linesRef.current = lines;
+    redraw(lines);
+  }, [lines, redraw]);
+
+  const getPoint = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    let clientX, clientY;
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = (e as React.MouseEvent).clientX;
-      clientY = (e as React.MouseEvent).clientY;
-    }
-    
-    return { 
-      x: (clientX - rect.left) * scaleX, 
-      y: (clientY - rect.top) * scaleY 
-    };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    if (!canvas || !ctx) return;
+
     e.preventDefault();
-    setIsDrawing(true);
-    setCurrentLine({ points: [getCoordinates(e)], color, size });
+    canvas.setPointerCapture(e.pointerId);
+
+    isDrawingRef.current = true;
+    const point = getPoint(e);
+    pointsRef.current = [point];
     setAiResponse(null);
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = colorRef.current;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, sizeRef.current / 2, 0, Math.PI * 2);
+    ctx.fill();
   };
 
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+
     e.preventDefault();
-    if (!isDrawing || !currentLine) return;
-    setCurrentLine({
-      ...currentLine,
-      points: [...currentLine.points, getCoordinates(e)]
-    });
+
+    const point = getPoint(e);
+    const points = pointsRef.current;
+    const previous = points[points.length - 1];
+    if (!previous) return;
+
+    // Ignore sub-pixel jitter so strokes stay smooth and cheap.
+    if (Math.hypot(point.x - previous.x, point.y - previous.y) < 1.5) return;
+
+    points.push(point);
+
+    ctx.beginPath();
+    ctx.moveTo(previous.x, previous.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.strokeStyle = colorRef.current;
+    ctx.lineWidth = sizeRef.current;
+    ctx.stroke();
   };
 
-  const stopDrawing = () => {
-    if (!isDrawing || !currentLine) return;
-    setIsDrawing(false);
-    setLines([...lines, currentLine]);
-    setCurrentLine(null);
-    setRedoStack([]);
+  const stopDrawing = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current) return;
+    isDrawingRef.current = false;
+
+    if (e && canvasRef.current?.hasPointerCapture(e.pointerId)) {
+      canvasRef.current.releasePointerCapture(e.pointerId);
+    }
+
+    const points = pointsRef.current;
+    pointsRef.current = [];
+
+    if (points.length > 0) {
+      const line: Line = { points, color: colorRef.current, size: sizeRef.current };
+      setLines(prev => [...prev, line]);
+      setRedoStack([]);
+    }
   };
 
   const handleUndo = () => {
@@ -127,7 +199,7 @@ const ScribbleBoard = () => {
     const newLines = [...lines];
     const last = newLines.pop();
     if (last) {
-      setRedoStack([...redoStack, last]);
+      setRedoStack(prev => [...prev, last]);
       setLines(newLines);
     }
   };
@@ -137,17 +209,17 @@ const ScribbleBoard = () => {
     const newRedo = [...redoStack];
     const item = newRedo.pop();
     if (item) {
-      setLines([...lines, item]);
+      setLines(prev => [...prev, item]);
       setRedoStack(newRedo);
     }
   };
 
   const handleAnalyze = async () => {
-    if (lines.length === 0 && !currentLine) return;
-    
+    if (lines.length === 0) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     setIsAnalyzing(true);
     setAiResponse(null);
 
@@ -166,7 +238,7 @@ const ScribbleBoard = () => {
       let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
       
       for (let i = 0; i < pixels.length; i += 4) {
-        const r = pixels[i], g = pixels[i+1], b = pixels[i+2], a = pixels[i+3];
+        const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2], a = pixels[i + 3];
         if (a > 20 && (r > 30 || g > 30 || b > 30)) {
           drawnPixels++;
           const px = (i / 4) % canvas.width;
@@ -179,7 +251,7 @@ const ScribbleBoard = () => {
       }
 
       const totalPixels = canvas.width * canvas.height;
-      const coverage = (drawnPixels / totalPixels) * 100;
+      const coverage = totalPixels > 0 ? (drawnPixels / totalPixels) * 100 : 0;
       const strokeCount = lines.length;
       const bboxWidth = maxX - minX;
       const bboxHeight = maxY - minY;
@@ -252,29 +324,29 @@ const ScribbleBoard = () => {
       
       <div className="border border-[#27272a] bg-[#0c0c0c] p-1 flex flex-col md:flex-row gap-4">
         
-        <div className="flex-1 relative">
-          <div className="absolute top-4 left-4 font-code text-tiny pointer-events-none select-none" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+        <div className="flex-1 relative" ref={containerRef}>
+          <div className="absolute top-3 left-3 md:top-4 md:left-4 font-code text-tiny pointer-events-none select-none z-10 max-w-[70%]" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
             {promptStr}
           </div>
           <canvas
             ref={canvasRef}
-            width={800}
-            height={400}
-            className="w-full h-[400px] bg-[#111] cursor-crosshair touch-none"
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
+            className="block w-full h-[320px] md:h-[400px] bg-[#111] cursor-crosshair touch-none select-none"
+            aria-label="Scribble board — draw with a mouse, stylus, or finger"
+            onPointerDown={startDrawing}
+            onPointerMove={draw}
+            onPointerUp={stopDrawing}
+            onPointerCancel={stopDrawing}
+            onLostPointerCapture={() => stopDrawing()}
+            onContextMenu={(e) => e.preventDefault()}
           />
-          <div className="absolute bottom-4 left-4 flex gap-2">
+          <div className="absolute bottom-3 left-3 md:bottom-4 md:left-4 flex gap-2 z-10">
             {colors.map(c => (
               <button 
                 key={c} 
                 onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-sm border ${color === c ? 'border-white' : 'border-[#27272a]'}`}
+                aria-label={c === '#0c0c0c' ? 'Eraser' : `Draw in ${c}`}
+                aria-pressed={color === c}
+                className={`w-8 h-8 md:w-6 md:h-6 rounded-sm border ${color === c ? 'border-white' : 'border-[#27272a]'}`}
                 style={{ backgroundColor: c === '#0c0c0c' ? '#111' : c }}
                 title={c === '#0c0c0c' ? 'Eraser' : 'Color'}
               >
@@ -282,21 +354,21 @@ const ScribbleBoard = () => {
               </button>
             ))}
           </div>
-          <div className="absolute bottom-4 right-4 flex gap-2 bg-[#0c0c0c] border border-[#27272a] p-1">
-            <button onClick={handleUndo} disabled={lines.length===0} className="p-1 hover:text-white text-dim disabled:opacity-30"><Undo size={14}/></button>
-            <button onClick={handleRedo} disabled={redoStack.length===0} className="p-1 hover:text-white text-dim disabled:opacity-30"><Redo size={14}/></button>
-            <button onClick={() => {setLines([]); setRedoStack([]); setAiResponse(null)}} className="p-1 hover:text-red-400 text-dim"><Trash2 size={14}/></button>
+          <div className="absolute bottom-3 right-3 md:bottom-4 md:right-4 flex gap-1 bg-[#0c0c0c] border border-[#27272a] p-1 z-10">
+            <button onClick={handleUndo} disabled={lines.length === 0} aria-label="Undo" className="p-2 md:p-1 hover:text-white text-dim disabled:opacity-30"><Undo size={14}/></button>
+            <button onClick={handleRedo} disabled={redoStack.length === 0} aria-label="Redo" className="p-2 md:p-1 hover:text-white text-dim disabled:opacity-30"><Redo size={14}/></button>
+            <button onClick={() => { setLines([]); setRedoStack([]); setAiResponse(null); }} aria-label="Clear board" className="p-2 md:p-1 hover:text-red-400 text-dim"><Trash2 size={14}/></button>
           </div>
         </div>
 
-        <div className="w-full md:w-64 flex flex-col gap-4 p-4 border-l border-[#27272a] bg-[#0a0a0a]">
+        <div className="w-full md:w-64 flex flex-col gap-4 p-4 border-t md:border-t-0 md:border-l border-[#27272a] bg-[#0a0a0a]">
           <h3 className="font-code text-tiny" style={{ color: 'var(--text-muted)' }}>SCRIBBLE BOARD</h3>
           <p className="font-serif text-small italic" style={{ color: 'var(--text-dim)' }}>Go ahead. Draw your masterpiece. Or whatever that is.</p>
           
           <button 
             onClick={handleAnalyze} 
             disabled={isAnalyzing || lines.length === 0}
-            className="mt-4 border border-[#27272a] hover:border-accent p-2 font-mono text-tiny flex items-center justify-center gap-2 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-2 md:mt-4 border border-[#27272a] hover:border-accent p-3 md:p-2 font-mono text-tiny flex items-center justify-center gap-2 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Sparkles size={14} className="group-hover:text-accent" />
             [ WHAT IS THIS? ]

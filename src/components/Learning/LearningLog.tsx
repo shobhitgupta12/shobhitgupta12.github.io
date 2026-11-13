@@ -34,6 +34,7 @@ const TrackCard = ({ track, idx, isHighlighted }: {
     const glowEl = glowRef.current;
     const inner = innerRef.current;
     if (!card || !glowEl || !inner) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
     const onMove = (e: MouseEvent) => {
       const rect = card.getBoundingClientRect();
@@ -69,6 +70,15 @@ const TrackCard = ({ track, idx, isHighlighted }: {
     <div
       ref={cardRef}
       onClick={() => setExpanded(e => !e)}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setExpanded(v => !v);
+        }
+      }}
       className="relative overflow-hidden cursor-pointer transition-all duration-500"
       style={{
         background: 'linear-gradient(135deg, #111113 0%, #0d0d0f 100%)',
@@ -89,7 +99,7 @@ const TrackCard = ({ track, idx, isHighlighted }: {
       <div
         className="absolute top-0 right-0 font-code leading-none select-none pointer-events-none"
         style={{
-          fontSize: '120px',
+          fontSize: 'clamp(72px, 22vw, 120px)',
           color: 'transparent',
           WebkitTextStroke: `1px ${accent}18`,
           lineHeight: 1,
@@ -103,7 +113,7 @@ const TrackCard = ({ track, idx, isHighlighted }: {
       {/* Inner — tilts on hover */}
       <div
         ref={innerRef}
-        className="relative p-8"
+        className="relative p-6 md:p-8"
         style={{
           transformStyle: 'preserve-3d',
           transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1)',
@@ -213,20 +223,21 @@ const LearningLog = () => {
       </div>
 
       {/* Evolution timeline */}
-      <div className="mb-16 p-6 overflow-x-auto" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="mb-16 p-4 md:p-6 overflow-x-auto no-scrollbar" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="font-code text-[9px] mb-5" style={{ color: 'var(--text-dim)', letterSpacing: '0.1em' }}>LEARNING EVOLUTION</div>
         <div className="flex items-center gap-2 min-w-max">
           {learningEvolution.map((step, idx) => (
             <div key={step.label} className="flex items-center gap-2">
               <div
-                className="px-4 py-2 font-code text-[10px] cursor-default transition-all duration-200"
+                className="px-4 py-2 font-code text-[10px] cursor-pointer md:cursor-default transition-all duration-200"
                 style={{
                   border: `1px solid ${hoveredStage === step.source ? 'rgba(94,234,212,0.4)' : 'rgba(255,255,255,0.06)'}`,
                   background: hoveredStage === step.source ? 'rgba(94,234,212,0.05)' : '#0d0d0d',
                   color: hoveredStage === step.source ? 'var(--tag-color)' : 'var(--text-dim)',
                 }}
-                onMouseEnter={() => setHoveredStage(step.source)}
-                onMouseLeave={() => setHoveredStage(null)}
+                onClick={() => setHoveredStage(prev => prev === step.source ? null : step.source)}
+                onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredStage(step.source); }}
+                onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredStage(null); }}
               >
                 {step.label}
               </div>

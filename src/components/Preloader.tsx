@@ -8,9 +8,25 @@ export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
   const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // Reduced-motion users get straight into the site.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onComplete();
+      return () => {
+        document.body.style.overflow = previousOverflow;
+        document.documentElement.style.overflow = previousHtmlOverflow;
+      };
+    }
+
+    let completeTimer: number | undefined;
+
     const tl = gsap.timeline({
       onComplete: () => {
-        setTimeout(onComplete, 300); // Small buffer before unmounting
+        completeTimer = window.setTimeout(onComplete, 300); // Small buffer before unmounting
       }
     });
 
@@ -43,6 +59,12 @@ export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
       duration: 0.3
     }, "-=0.3");
 
+    return () => {
+      tl.kill();
+      if (completeTimer) window.clearTimeout(completeTimer);
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
   }, [onComplete]);
 
   return (

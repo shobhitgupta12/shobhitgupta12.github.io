@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useIsTouchDevice } from '../../hooks/useMediaQuery';
 
 const concepts = [
   { id: 'fs', label: 'FULL-STACK DEVELOPMENT', desc: 'Building end-to-end applications — from UI to database.' },
@@ -12,11 +13,13 @@ const About = () => {
   const [hoveredConcept, setHoveredConcept] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const cardGlowRef = useRef<HTMLDivElement>(null);
+  const isTouch = useIsTouchDevice();
 
   useEffect(() => {
     const card = cardRef.current;
     const glow = cardGlowRef.current;
     if (!card || !glow) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
     const onMove = (e: MouseEvent) => {
       const rect = card.getBoundingClientRect();
       glow.style.background = `radial-gradient(350px circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px, rgba(96,165,250,0.08), transparent 70%)`;
@@ -30,13 +33,13 @@ const About = () => {
 
   return (
     <section id="about" className="section container border-t">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-16 items-start">
         
         {/* Left Side: System Narrative */}
         <div className="lg:col-span-7 flex flex-col justify-center">
-          <h2 className="font-mono text-tiny text-muted mb-12">SYSTEMS & PHILOSOPHY</h2>
+          <h2 className="font-mono text-tiny text-muted mb-8 md:mb-12">SYSTEMS & PHILOSOPHY</h2>
           
-          <p className="font-serif text-heading italic mb-16" style={{ color: 'var(--text-muted)' }}>
+          <p className="font-serif text-heading italic mb-10 md:mb-16" style={{ color: 'var(--text-muted)' }}>
             "I started in <span className="text-white">Civil Engineering</span>.<br/><br/>
             That curiosity pushed me toward <span className="text-white">programming</span>.<br/>
             Programming led me to <span className="text-white">full-stack development</span>.<br/>
@@ -48,9 +51,19 @@ const About = () => {
             {concepts.map((concept, idx) => (
               <div 
                 key={concept.id}
-                className="flex items-start mb-6 group cursor-default"
-                onMouseEnter={() => setHoveredConcept(concept.id)}
-                onMouseLeave={() => setHoveredConcept(null)}
+                className="flex items-start mb-6 group cursor-pointer md:cursor-default"
+                onMouseEnter={isTouch ? undefined : () => setHoveredConcept(concept.id)}
+                onMouseLeave={isTouch ? undefined : () => setHoveredConcept(null)}
+                onClick={() => setHoveredConcept(prev => prev === concept.id ? null : concept.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setHoveredConcept(prev => prev === concept.id ? null : concept.id);
+                  }
+                }}
+                aria-expanded={hoveredConcept === concept.id}
               >
                 <div className="flex flex-col items-center mr-6 mt-1">
                   <div className={`w-3 h-3 rounded-full transition-colors duration-300 ${hoveredConcept === concept.id ? 'bg-accent' : 'bg-[#27272a]'}`}></div>
@@ -72,7 +85,7 @@ const About = () => {
         </div>
 
         {/* Right Side: Education & Foundation — proximity gradient card */}
-        <div ref={cardRef} className="lg:col-span-5 bg-[#0a0a0a] border border-[#27272a] p-8 relative overflow-hidden group">
+        <div ref={cardRef} className="lg:col-span-5 bg-[#0a0a0a] border border-[#27272a] p-6 md:p-8 relative overflow-hidden group">
           <div ref={cardGlowRef} className="proximity-glow" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent opacity-[0.03] blur-[80px] rounded-full group-hover:opacity-[0.12] transition-opacity duration-700"></div>
           

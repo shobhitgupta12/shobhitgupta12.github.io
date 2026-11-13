@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -58,8 +59,10 @@ const ExploreWorld = () => {
   const worldRef = useRef<HTMLDivElement>(null);
   const [activeRoom, setActiveRoom] = useState<string | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   useEffect(() => {
+    if (!isDesktop) return;
     if (!containerRef.current || !worldRef.current) return;
 
     const ctx = gsap.context(() => {
@@ -150,10 +153,12 @@ const ExploreWorld = () => {
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [isDesktop]);
 
-  // Mouse parallax on the world
+  // Mouse parallax on the world (desktop only)
   useEffect(() => {
+    if (!isDesktop) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!worldRef.current) return;
       const { clientX, clientY } = e;
@@ -169,9 +174,9 @@ const ExploreWorld = () => {
       });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [isDesktop]);
 
   const handleRoomClick = (link: string) => {
     const el = document.querySelector(link);
@@ -179,16 +184,51 @@ const ExploreWorld = () => {
   };
 
   return (
-    <section ref={containerRef} id="explore" className="relative w-full h-screen bg-[#050505]">
+    <section ref={containerRef} id="explore" className="relative w-full min-h-[100svh] md:h-screen bg-[#050505] py-20 md:py-0">
       
+      {/* Mobile: simple, tappable room grid (no pinning, no off-screen objects) */}
+      <div className="md:hidden relative z-10 px-5">
+        <h2 className="font-mono text-tiny text-muted tracking-widest">EXPLORE THE SYSTEM</h2>
+        <p className="font-serif text-small italic mt-3" style={{ color: 'var(--text-dim)' }}>
+          Four rooms. Pick one to jump straight in.
+        </p>
+
+        <div className="mt-8 grid gap-4">
+          {rooms.map(room => (
+            <button
+              key={room.id}
+              type="button"
+              onClick={() => handleRoomClick(room.link)}
+              className="text-left w-full border border-[#27272a] bg-[#0a0a0a] p-5 transition-colors active:bg-[#111]"
+              style={{ borderLeft: `3px solid ${room.color}` }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="font-mono text-[24px] leading-none mb-3" style={{ color: room.color }}>{room.icon}</div>
+                  <h3 className="font-sans text-small font-bold text-white mb-1">{room.title}</h3>
+                  <p className="font-mono text-[10px] text-dim leading-relaxed">{room.subtitle}</p>
+                </div>
+                <span className="font-mono text-[10px] shrink-0" style={{ color: room.color }}>[ENTER]</span>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-4">
+                {room.objects.map(obj => (
+                  <span key={obj} className="font-mono text-[10px] text-muted">→ {obj}</span>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: 3D world */}
       {/* Fixed UI overlay */}
-      <div className="absolute top-8 left-8 z-50">
+      <div className="hidden md:block absolute top-8 left-8 z-50">
         <h2 className="font-mono text-tiny text-muted tracking-widest">EXPLORE THE SYSTEM</h2>
         <div className="font-mono text-[10px] text-dim mt-2">SCROLL TO NAVIGATE</div>
       </div>
 
       {/* Progress bar */}
-      <div className="absolute top-0 left-0 w-full h-[1px] z-50">
+      <div className="hidden md:block absolute top-0 left-0 w-full h-[1px] z-50">
         <div 
           className="h-full bg-accent transition-all duration-100"
           style={{ width: `${scrollProgress * 100}%` }}
@@ -196,7 +236,7 @@ const ExploreWorld = () => {
       </div>
 
       {/* Room indicator */}
-      <div className="absolute top-8 right-8 z-50 font-mono text-[10px] text-dim">
+      <div className="hidden md:block absolute top-8 right-8 z-50 font-mono text-[10px] text-dim">
         {activeRoom ? (
           <span className="text-accent">[{activeRoom.toUpperCase()}]</span>
         ) : (
@@ -205,7 +245,7 @@ const ExploreWorld = () => {
       </div>
 
       {/* 3D World Container */}
-      <div className="absolute inset-0 flex items-center justify-center z-30" style={{ perspective: '1200px' }}>
+      <div className="hidden md:flex absolute inset-0 items-center justify-center z-30" style={{ perspective: '1200px' }}>
         <div ref={worldRef} className="explore-world-inner relative" style={{ transformStyle: 'preserve-3d' }}>
           
           {/* Floor Grid */}
@@ -363,7 +403,7 @@ const ExploreWorld = () => {
       </div>
 
       {/* Continue prompt */}
-      <div className="explore-prompt absolute bottom-8 left-1/2 -translate-x-1/2 z-10 font-mono text-[10px] text-dim flex flex-col items-center gap-2 opacity-0 pointer-events-none">
+      <div className="explore-prompt hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 z-10 font-mono text-[10px] text-dim flex-col items-center gap-2 opacity-0 pointer-events-none">
         <span>CLICK A ROOM TO ENTER</span>
         <span>OR CONTINUE SCROLLING</span>
         <div className="w-[1px] h-6 bg-gradient-to-b from-dim to-transparent mt-1" />

@@ -66,7 +66,7 @@ const SkillMap = () => {
 
   return (
     <section id="skills" className="section container border-t">
-      <div className="mb-16 max-w-2xl">
+      <div className="mb-10 md:mb-16 max-w-2xl">
         <h2 className="font-mono text-tiny text-muted mb-4">SYSTEM MAP</h2>
         <p className="font-serif text-small text-dim italic">
           Skills organized as interconnected systems, not a flat list.
@@ -120,7 +120,7 @@ const SkillMap = () => {
 
         {/* Right: Skill Detail */}
         <div className="lg:col-span-8">
-          <div className="bg-[#0c0c0c] border border-[#27272a] p-8 min-h-[500px] relative overflow-hidden">
+          <div className="bg-[#0c0c0c] border border-[#27272a] p-5 md:p-8 min-h-[320px] md:min-h-[500px] relative overflow-hidden">
             {activeData ? (
               <>
                 <div className="absolute top-0 right-0 w-48 h-48 blur-[80px] opacity-10 pointer-events-none" style={{ backgroundColor: activeData.color }} />
@@ -140,7 +140,7 @@ const SkillMap = () => {
                 {/* Connected clusters */}
                 <div className="border-t border-[#27272a] pt-6">
                   <div className="font-mono text-[10px] text-muted mb-3">CONNECTS TO</div>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     {activeData.connections.map(connId => {
                       const conn = clusters.find(c => c.id === connId);
                       return conn ? (

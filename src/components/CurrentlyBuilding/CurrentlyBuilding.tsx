@@ -73,6 +73,7 @@ const ProximityCard = ({ item }: { item: typeof currentWork[0] }) => {
     const glow = glowRef.current;
     const inner = innerRef.current;
     if (!card || !glow || !inner) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = card.getBoundingClientRect();
@@ -107,13 +108,9 @@ const ProximityCard = ({ item }: { item: typeof currentWork[0] }) => {
   return (
     <div
       ref={cardRef}
-      className="cb-item flex-shrink-0 flex flex-col justify-center relative"
+      className="cb-card cb-item flex flex-col justify-center relative"
       style={{
-        width: '100vw',
-        minHeight: '100vh',
-        padding: 'clamp(2rem, 6vw, 6rem) clamp(1.5rem, 8vw, 8rem)',
         backgroundColor: '#0b0b0b',
-        borderLeft: `1px solid #1f1f1f`,
       }}
     >
       {/* Proximity glow */}
@@ -248,15 +245,15 @@ const CurrentlyBuilding = () => {
       {/* Section label — inside pinned area */}
       <div
         ref={trackRef}
-        className="flex"
-        style={{ width: `${currentWork.length * 100}vw` }}
+        className="cb-track"
+        style={{ '--cb-count': currentWork.length } as React.CSSProperties}
       >
         {currentWork.map((item, idx) => (
-          <div key={item.id} style={{ position: 'relative', width: '100vw', flexShrink: 0 }}>
+          <div key={item.id} className="cb-slide">
             {/* Label only on first card */}
             {idx === 0 && (
               <div
-                className="absolute top-8 font-code text-[10px]"
+                className="absolute top-6 md:top-8 font-code text-[10px]"
                 style={{
                   left: 'clamp(1.5rem, 8vw, 8rem)',
                   color: 'var(--text-muted)',

@@ -29,8 +29,8 @@ const DsaMap = () => {
   const hoveredData = topics.find(t => t.name === hoveredTopic);
 
   return (
-    <div className="bg-[#0c0c0c] border border-[#27272a] p-8 h-full flex flex-col">
-      <div className="flex justify-between items-start mb-6">
+    <div className="bg-[#0c0c0c] border border-[#27272a] p-5 md:p-8 h-full flex flex-col">
+      <div className="flex flex-wrap gap-2 justify-between items-start mb-6">
         <div>
           <h3 className="font-sans text-small text-white mb-1">DSA KNOWLEDGE GRAPH</h3>
           <p className="font-mono text-[10px] text-dim">Foundation built through Striver's A2Z (TUF), Love Babbar, and Problem Solving.</p>
@@ -41,16 +41,18 @@ const DsaMap = () => {
       </div>
       
       {/* Topic Grid */}
-      <div className="flex-1 flex flex-wrap content-start gap-2 relative group/empty min-h-[200px]">
+      <div 
+        className="flex-1 flex flex-wrap content-start gap-2 relative group/empty min-h-[200px]"
+        onMouseEnter={() => {
+          if (!window.sessionStorage.getItem('egg_dsamap')) {
+            window.dispatchEvent(new CustomEvent('easter-egg-found', { detail: { name: 'Void Traversal Egg' } }));
+            window.sessionStorage.setItem('egg_dsamap', 'true');
+          }
+        }}
+      >
         {/* Hidden text in the empty space */}
         <div 
-          className="absolute inset-0 flex items-center justify-center cursor-help"
-          onMouseEnter={() => {
-            if (!window.sessionStorage.getItem('egg_dsamap')) {
-              window.dispatchEvent(new CustomEvent('easter-egg-found', { detail: { name: 'Void Traversal Egg' } }));
-              window.sessionStorage.setItem('egg_dsamap', 'true');
-            }
-          }}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none cursor-help"
         >
           <span className="font-code text-[10px] opacity-20 group-hover/empty:opacity-0 transition-opacity absolute pointer-events-none" style={{ color: 'var(--text-dim)' }}>
             [ illuminate the dark ]
@@ -63,9 +65,19 @@ const DsaMap = () => {
         {topics.map(topic => (
           <div 
             key={topic.name}
-            onMouseEnter={() => setHoveredTopic(topic.name)}
-            onMouseLeave={() => setHoveredTopic(null)}
-            className={`cursor-pointer px-4 py-2 border font-mono text-tiny transition-all duration-300 hover-bubbly ${
+            onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredTopic(topic.name); }}
+            onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredTopic(null); }}
+            onClick={() => setHoveredTopic(prev => prev === topic.name ? null : topic.name)}
+            role="button"
+            tabIndex={0}
+            aria-pressed={hoveredTopic === topic.name}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setHoveredTopic(prev => prev === topic.name ? null : topic.name);
+              }
+            }}
+            className={`cursor-pointer px-3.5 py-2.5 border font-mono text-tiny transition-all duration-300 hover-bubbly ${
               hoveredTopic === topic.name 
                 ? 'border-accent bg-accent/10 text-white' 
                 : hoveredTopic 
@@ -93,7 +105,7 @@ const DsaMap = () => {
           </div>
         ) : (
           <div className="font-mono text-[10px] text-dim italic">
-            Hover a topic to see concepts.
+            Tap (or hover) a topic to see concepts.
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Lenis from 'lenis';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero/Hero';
 import QuickFacts from './components/QuickFacts';
@@ -32,31 +33,82 @@ const SLIDE_STYLE: React.CSSProperties = {
 
 function App() {
   const [loading, setLoading] = useState(true);
+  const finishLoading = useCallback(() => setLoading(false), []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
 
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
-    });
+    // Mobile browsers resize the visual viewport when the URL bar collapses.
+    // Ignoring those resizes prevents pinned sections from jumping.
+    ScrollTrigger.config({ ignoreMobileResize: true });
 
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    // Always open the portfolio at the top instead of a restored offset.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    window.scrollTo(0, 0);
+
+    // Smooth wheel scrolling is desktop-only. Touch devices keep native
+    // scrolling (best feel, no jank, no fighting with the address bar).
+    const desktopQuery = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)');
+    let lenis: Lenis | null = null;
+    let rafId = 0;
+
+    const stopLenis = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      lenis?.destroy();
+      lenis = null;
+    };
+
+    const startLenis = () => {
+      stopLenis();
+      if (!desktopQuery.matches) return;
+
+      lenis = new Lenis({
+        duration: 1.1,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 1,
+      });
+
+      const raf = (time: number) => {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+      ScrollTrigger.refresh();
+    };
+
+    startLenis();
+    const onDesktopChange = () => startLenis();
+    desktopQuery.addEventListener('change', onDesktopChange);
+
+    // Ambient cursor light — skipped entirely on touch devices.
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    let glowFrame = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+
+    const applyGlow = () => {
+      glowFrame = 0;
+      document.documentElement.style.setProperty('--mouse-x', `${pointerX}px`);
+      document.documentElement.style.setProperty('--mouse-y', `${pointerY}px`);
+    };
 
     const handleMouseMove = (e: MouseEvent) => {
-      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      if (!glowFrame) glowFrame = requestAnimationFrame(applyGlow);
     };
-    window.addEventListener('mousemove', handleMouseMove);
+
+    if (finePointer.matches) window.addEventListener('mousemove', handleMouseMove, { passive: true });
+
+    // Recalculate pinned sections once fonts and images have settled.
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener('load', refresh);
+    document.fonts?.ready.then(refresh).catch(() => {});
 
     // Easter Egg: The Matrix
     console.log("%cWake up, Neo...\n%cThe Matrix has you.\n\n%cLooking for easter eggs? You found the first one.", 
@@ -65,24 +117,22 @@ function App() {
       "color: #52525b; font-size: 10px;"
     );
 
-    return () => { 
-      lenis.destroy(); 
+    return () => {
+      stopLenis();
+      desktopQuery.removeEventListener('change', onDesktopChange);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('load', refresh);
+      if (glowFrame) cancelAnimationFrame(glowFrame);
     };
   }, []);
 
   return (
     <>
-      {loading && <Preloader onComplete={() => setLoading(false)} />}
+      {loading && <Preloader onComplete={finishLoading} />}
       <EasterEggGuide />
       
-      {/* Global Ambient Cursor Glow - Warm Flashlight effect */}
-      <div 
-        className="pointer-events-none fixed inset-0 z-[9999]"
-        style={{
-          background: 'radial-gradient(400px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh), rgba(255, 210, 150, 0.12), transparent 80%)'
-        }}
-      />
+      {/* Global Ambient Cursor Glow - Warm Flashlight effect (desktop only) */}
+      <div className="cursor-glow" />
       <div className="grid-overlay"></div>
       <Navigation />
       <SectionProgress />

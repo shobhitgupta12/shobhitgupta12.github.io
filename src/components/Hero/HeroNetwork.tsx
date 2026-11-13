@@ -14,25 +14,31 @@ const HeroNetwork = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+    let frame = 0;
+    let lastX = 0;
+    let lastY = 0;
+
+    const apply = () => {
+      frame = 0;
       if (!svgRef.current) return;
-      
-      const { clientX, clientY } = e;
-      const { innerWidth, innerHeight } = window;
-      
-      // Normalized mouse -1 to 1
-      const nx = (clientX / innerWidth) * 2 - 1;
-      const ny = (clientY / innerHeight) * 2 - 1;
-      
-      // Parallax effect on the entire SVG
+      const nx = (lastX / window.innerWidth) * 2 - 1;
+      const ny = (lastY / window.innerHeight) * 2 - 1;
       svgRef.current.style.transform = `translate(${nx * -20}px, ${ny * -20}px)`;
-      
-      // We can also select all circles and move them slightly based on proximity, 
-      // but keeping it simple for performance. CSS handles hover scale well.
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (!frame) frame = requestAnimationFrame(apply);
     };
     
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
   }, []);
 
   return (

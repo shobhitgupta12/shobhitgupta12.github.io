@@ -48,7 +48,7 @@ const SectionProgress = () => {
 
   return (
     <div
-      className="fixed right-5 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 transition-all duration-500"
+      className="hidden md:flex fixed right-5 top-1/2 -translate-y-1/2 z-50 flex-col items-center gap-3 transition-all duration-500"
       style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? 'auto' : 'none' }}
     >
       {SECTIONS.map(({ id, label }) => {

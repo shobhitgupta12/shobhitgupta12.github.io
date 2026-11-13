@@ -4,7 +4,7 @@ const Footer = () => {
   const [exitState, setExitState] = useState(0);
 
   return (
-    <footer className="w-full border-t border-[#27272a] bg-[#050505] pt-12 pb-16 px-8 md:px-16 lg:px-24 flex flex-col md:flex-row justify-between items-start md:items-end gap-8 relative z-50">
+    <footer className="w-full border-t border-[#27272a] bg-[#050505] pt-12 pb-28 md:pb-16 px-5 sm:px-8 md:px-16 lg:px-24 flex flex-col md:flex-row justify-between items-start md:items-end gap-8 relative z-50">
       <div className="flex flex-col gap-2">
         <div className="font-sans text-small font-bold text-white tracking-widest uppercase">SHOBHIT GUPTA</div>
         <div className="font-mono text-[10px] md:text-tiny text-accent">FULL-STACK / DATA SCIENCE / AI</div>

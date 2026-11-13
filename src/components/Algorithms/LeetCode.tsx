@@ -55,7 +55,7 @@ const LeetCode = () => {
         <div className="lg:col-span-4 flex flex-col gap-8">
           
           {/* Stats Card */}
-          <div className="bg-[#0a0a0a] border border-[#27272a] p-8">
+          <div className="bg-[#0a0a0a] border border-[#27272a] p-5 md:p-8">
             <h3 className="font-sans text-small text-white mb-6 border-b border-[#27272a] pb-4">LEETCODE STATS</h3>
             
             {loading ? (
@@ -99,7 +99,7 @@ const LeetCode = () => {
           </div>
 
           {/* Learning Sources */}
-          <div className="bg-[#0a0a0a] border border-[#27272a] p-8">
+          <div className="bg-[#0a0a0a] border border-[#27272a] p-5 md:p-8">
             <h3 className="font-sans text-small text-white mb-6 border-b border-[#27272a] pb-4">LEARNED THROUGH</h3>
             <div className="flex flex-col gap-4">
               <a href="https://takeuforward.org/profile/shobhitguptaaa" target="_blank" rel="noopener noreferrer" className="flex justify-between items-baseline group">

@@ -22,32 +22,36 @@ export const EasterEggGuide = () => {
     });
 
     // Initial popup after a short delay
+    let initialHideTimeout: number | undefined;
     const initialTimer = setTimeout(() => {
       setMessage("Lumos! 🪄 Use your wand to illuminate the dark, Harry. The hidden secrets of this realm await you...");
       setIsVisible(true);
-      
-      setTimeout(() => {
+
+      initialHideTimeout = window.setTimeout(() => {
         setIsVisible(false);
       }, 8000);
     }, 2500);
 
-    let hideTimeout: number;
+    let hideTimeout: number | undefined;
 
     // Listen for easter egg discoveries
     const handleEggFound = (e: Event) => {
       const customEvent = e as CustomEvent;
       const eggName = customEvent.detail?.name || 'secret';
-      
+
+      // A discovery takes priority over the intro message.
+      clearTimeout(initialHideTimeout);
+
       const count = parseInt(localStorage.getItem('egg_count') || '0');
       const newCount = count + 1;
       localStorage.setItem('egg_count', newCount.toString());
-      
+
       const quoteTemplate = MAGIC_QUOTES[(newCount - 1) % MAGIC_QUOTES.length];
       const rewardMsg = quoteTemplate.replace('{egg}', eggName);
 
       setMessage(rewardMsg);
       setIsVisible(true);
-      
+
       clearTimeout(hideTimeout);
       hideTimeout = window.setTimeout(() => {
         setIsVisible(false);
@@ -58,6 +62,7 @@ export const EasterEggGuide = () => {
 
     return () => {
       clearTimeout(initialTimer);
+      clearTimeout(initialHideTimeout);
       clearTimeout(hideTimeout);
       window.removeEventListener('easter-egg-found', handleEggFound);
     };
@@ -65,7 +70,7 @@ export const EasterEggGuide = () => {
 
   return (
     <div 
-      className={`fixed bottom-4 left-0 z-[100000] flex items-end transform-gpu will-change-[transform,opacity] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isVisible ? 'translate-x-4 opacity-100' : '-translate-x-[150%] opacity-0 pointer-events-none'}`}
+      className={`fixed bottom-20 md:bottom-4 left-0 z-[100000] flex items-end transform-gpu will-change-[transform,opacity] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isVisible ? 'translate-x-4 opacity-100' : '-translate-x-[150%] opacity-0 pointer-events-none'}`}
     >
       {/* The Avatar */}
       <div 
@@ -78,7 +83,7 @@ export const EasterEggGuide = () => {
 
       {/* The Message Bubble */}
       <div 
-        className="bg-[#050505]/60 backdrop-blur-md border border-[#065f46]/40 p-3 max-w-[260px] rounded-2xl shadow-[4px_4px_20px_rgba(6,95,70,0.15)] relative mb-3"
+        className="bg-[#050505]/60 backdrop-blur-md border border-[#065f46]/40 p-3 max-w-[calc(100vw-5.5rem)] sm:max-w-[260px] rounded-2xl shadow-[4px_4px_20px_rgba(6,95,70,0.15)] relative mb-3"
         style={{ transformOrigin: 'bottom left' }}
       >
         <div className="font-serif text-small font-bold text-[#10b981] mb-1 flex items-center gap-2 relative z-10">
